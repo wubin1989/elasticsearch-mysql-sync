@@ -6,6 +6,7 @@ const cronJob = require('./cronjob')
 const SyncJob = cronJob.SyncJob
 const EsUtil = require("es_utils")
 const _ = require("lodash")
+const moment = require("moment")
 
 class Syncer extends EsUtil {
   constructor(config) {
@@ -15,8 +16,10 @@ class Syncer extends EsUtil {
     this.settings = config.settings
     this.mappings = config.mappings
     this.schedule = config.schedule
-    this.$lastexecutionstart = config.initialParameter.lastexecutionstart || new Date()
-    this.$lastexecutionend = config.initialParameter.lastexecutionend || new Date()
+    this.$lastexecutionstart = config.initialParameter.lastexecutionstart || new Date(0)
+    this.$lastexecutionend = config.initialParameter.lastexecutionend || new Date(0)
+    this.$lastexecutionstartInSeconds = config.initialParameter.lastexecutionstartInSeconds || 0
+    this.$lastexecutionendInSeconds = config.initialParameter.lastexecutionendInSeconds || 0
     this.$totalrows = config.initialParameter.totalrows || 0
   }
 
@@ -69,6 +72,7 @@ class Syncer extends EsUtil {
       syncJob.fireOnTick = async() => {
         try {
           this.$lastexecutionstart = new Date()
+          this.$lastexecutionstartInSeconds = moment().unix()
           const body = {
             settings: this.settings,
             mappings: this.mappings
@@ -112,6 +116,7 @@ class Syncer extends EsUtil {
           console.log(JSON.stringify(resp, null, 4))
 
           this.$lastexecutionend = new Date()
+          this.$lastexecutionendInSeconds = moment().unix()
         } catch (error) {
           console.log(error)
         }
