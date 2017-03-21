@@ -36,7 +36,12 @@ class Syncer extends EsUtil {
       let results
       for (let i = 0; i < this.sql.length; i++) {
         const statement = this.sql[i].statement
-        const parameter = this.sql[i].parameter
+        const parameter = this.sql[i].parameter.map(x => {
+          if (x[0] === "$") {
+            x = this[x]
+          }
+          return x
+        })
         results = await new Promise((resolve, reject) => {
           const that = this
           this.connection.query(statement, parameter,
@@ -45,8 +50,8 @@ class Syncer extends EsUtil {
               resolve(results)
             })
         })
-        console.log(results);
       }
+
       const docs = results.map(x => {
         const _x = _.cloneDeep(x)
         _x._id = undefined
@@ -81,6 +86,7 @@ class Syncer extends EsUtil {
 
       syncJob.fireOnTick = async() => {
         try {
+          console.log(this.$lastexecutionstartInSeconds);
           const executionstart = new Date()
           const executionstartInSeconds = moment().unix()
           this.$totalrows += await this.sync()
