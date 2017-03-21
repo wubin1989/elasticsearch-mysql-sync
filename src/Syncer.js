@@ -71,8 +71,8 @@ class Syncer extends EsUtil {
 
       syncJob.fireOnTick = async() => {
         try {
-          this.$lastexecutionstart = new Date()
-          this.$lastexecutionstartInSeconds = moment().unix()
+          const executionstart = new Date()
+          const executionstartInSeconds = moment().unix()
           const body = {
             settings: this.settings,
             mappings: this.mappings
@@ -115,6 +115,8 @@ class Syncer extends EsUtil {
           const resp = await this.bulkIndex(docs)
           console.log(JSON.stringify(resp, null, 4))
 
+          this.$lastexecutionstart = executionstart
+          this.$lastexecutionstartInSeconds = executionstartInSeconds
           this.$lastexecutionend = new Date()
           this.$lastexecutionendInSeconds = moment().unix()
         } catch (error) {
