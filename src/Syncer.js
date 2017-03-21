@@ -56,9 +56,19 @@ class Syncer extends EsUtil {
         }
       })
 
-      const resp = await this.bulkIndex(docs)
-      console.log(JSON.stringify(resp, null, 4))
-
+      const docsLen = docs.length
+      let resp
+      let start = 0
+      let _docs
+      const step = 1000
+      while (start < docsLen) {
+        const end = start + step
+        _docs = docs.slice(start, end)
+        resp = await this.bulkIndex(_docs)
+        console.log(JSON.stringify(resp, null, 4))
+        start = end
+      }
+      return docsLen
     } catch (error) {
       console.log(error)
     }
@@ -73,48 +83,7 @@ class Syncer extends EsUtil {
         try {
           const executionstart = new Date()
           const executionstartInSeconds = moment().unix()
-          const body = {
-            settings: this.settings,
-            mappings: this.mappings
-          }
-          try {
-            await this.createIndex(body)
-          } catch (error) {}
-
-          let results
-          for (let i = 0; i < this.sql.length; i++) {
-            const statement = this.sql[i].statement
-            const parameter = this.sql[i].parameter.map(x => {
-              if (x[0] === "$") {
-                x = this[x]
-              }
-              return x
-            })
-            results = await new Promise((resolve, reject) => {
-              const that = this
-              this.connection.query(statement, parameter,
-                function(error, results, fields) {
-                  if (error) reject(error)
-                  resolve(results)
-                })
-            })
-            console.log(results);
-          }
-
-          this.$totalrows += results.length
-
-          const docs = results.map(x => {
-            const _x = _.cloneDeep(x)
-            _x._id = undefined
-            return {
-              id: x._id,
-              doc: _x
-            }
-          })
-
-          const resp = await this.bulkIndex(docs)
-          console.log(JSON.stringify(resp, null, 4))
-
+          this.$totalrows += await this.sync()
           this.$lastexecutionstart = executionstart
           this.$lastexecutionstartInSeconds = executionstartInSeconds
           this.$lastexecutionend = new Date()
